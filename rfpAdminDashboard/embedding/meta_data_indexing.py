@@ -17,10 +17,6 @@ import json
 import pickle
 from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.response_synthesizers import TreeSummarize, BaseSynthesizer
-from llama_index.core.vector_stores.types import (
-    MetadataFilters,
-    FilterCondition,
-)
 from llama_index.core.schema import NodeWithScore
 from llama_index.core import VectorStoreIndex
 from dotenv import load_dotenv
@@ -230,7 +226,7 @@ def annotate_chunks_with_sections(chunks, sections):
         c.metadata["section_id"] = cur_main_section.get_section_id()
         c.metadata["sub_section_id"] = cur_sub_section.get_section_id()
 
-if __name__ == '__main__':
+async def meta_indexing():
     papers = ['AUT101_Speeding up the ERS rental car replacement process with group messaging.pptx', 'cms.pdf']
     
     if not os.path.exists('index.pkl'):  
@@ -241,7 +237,7 @@ if __name__ == '__main__':
         for paper_path, paper_dict in paper_dicts.items():
             json_dicts = paper_dict["json_dicts"]
             text_nodes = get_text_nodes(json_dicts, paper_dict["paper_path"])
-            all_text_nodes.extend(text_nodes)
+            # all_text_nodes.extend(text_nodes)
             text_nodes_dict[paper_path] = text_nodes
 
         if not os.path.exists('sections_dict.pkl'):
@@ -258,20 +254,20 @@ if __name__ == '__main__':
             pickle.dump(text_nodes_dict, open("text_nodes.pkl", "wb"))
         else:
             text_nodes_dict = pickle.load(open("text_nodes.pkl", "rb"))
-            all_text_nodes = []
-            for paper_path, text_nodes in text_nodes_dict.items():
-                all_text_nodes.extend(text_nodes)
+
+        for paper_path, text_nodes in text_nodes_dict.items():
+            all_text_nodes.extend(text_nodes)
 
         index = VectorStoreIndex(all_text_nodes)
-        pickle.dump(index, open("index.pkl", "wb"))
-    else:
-        index = pickle.load(open("index.pkl", "rb"))
+        pickle.dump(index, open(os.path.join(), "wb"))
+    return True
 
-        query_engine = index.as_query_engine(
+if __name__ == '__main__':
+    index = pickle.load(open("index.pkl", "rb"))
+    query_engine = index.as_query_engine(
             similarity_top_k=5,
             verbose=True,
-            temperature=0.7
-        )
+            temperature=0.7)
 
-        response = query_engine.query("What is brewing?")
-        print(str(response))
+    response = query_engine.query("What is brewing?")
+    print(str(response))

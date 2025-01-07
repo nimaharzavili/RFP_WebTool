@@ -7,6 +7,7 @@ import os
 from django.http import JsonResponse
 from django.contrib import messages
 from rfpAdminDashboard.embedding.flat_indexing import DocumentAnalysis
+from rfpAdminDashboard.embedding.meta_data_indexing import meta_indexing
 
 def dashboard(request, *args, **kwargs):
     if request.method == "POST":
@@ -50,9 +51,11 @@ def embedding(request, *args, **kwargs):
     if request.method == "POST":
         indexing_granularity = request.POST.get('bool_value', None)
         docTypesList = request.POST.getlist('items')
-        dp_obj = DocumentAnalysis(useNode=bool(indexing_granularity), specificTypesList=docTypesList)
-        dp_obj.indexing()
-        return HttpResponse("Indexing is finished.")
+        index_flag = meta_indexing()
+        if index_flag:
+            return HttpResponse("Indexing is finished.")
+        else:
+            return HttpResponse("Indexing is not finished properly.")
     elif request.method == "GET":
         return render(request, "embedding.html")
     else:
