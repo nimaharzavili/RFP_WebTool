@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            direction: ltr;
+            text-align: left;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .tab-header {
+            display: flex;
+            cursor: pointer;
+            text-align: center;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+            background: #f1f1f1;
+        }
+
+        .tab-header div {
+            padding: 10px;
+            background: #f1f1f1;
+            margin-left: 5px;
+        }
+
+        .tab-header .active {
+            background: #ccc;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        label, input, button {
+            margin-top: 10px;
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        input[type="text"]:hover {
+            background-color: #45a049;
+        }
+
+        .error {
+            color: red;
+            margin-top: 5px;
+        }
+
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Admin Dashboard</h1>
+
+        <div class="tab-header">
+            <div data-tab="1" class="active"><a href="{% url 'rfpAdminDashboard:dashboard' %}" class="href">Home</a></div>
+            <div data-tab="2" class="active"><a href="{% url 'rfpAdminDashboard:fileManager' %}" class="href">File Manager</a></div>
+            <div data-tab="3" class="active"><a href="{% url 'rfpAdminDashboard:embedding' %}" class="href">Manage Embeddings</a></div>
+        </div>
+    </div>
+
+    <frame>
+        <form method="POST" action="{% url 'rfpAdminDashboard:embedding' %}">
+            {% csrf_token %}
+    
+            <h4>Choose input mode for document embedding:</h4>
+            <select name="bool_value" id="bool_value">
+                <option value="True">Use Page Node</option>
+                <option value="False">Use Documents Directly</option>
+            </select>
+            <br>
+            <h4>Select document types for embedding:</h4>
+            <h6>If you do not select any document type, the embedding will be done on all documents types.</h6>
+            <div>
+                <input type="checkbox" name="items" value=".pdf" id="item1">
+                <label for="item1">.pdf</label>
+            </div>
+            <div>
+                <input type="checkbox" name="items" value=".docx" id="item2">
+                <label for="item2">.docx</label>
+            </div>
+            <div>
+                <input type="checkbox" name="items" value=".pptx" id="item3">
+                <label for="item3">.pptx</label>
+            </div>
+            <div>
+                <input type="checkbox" name="items" value=".xlsx" id="item4">
+                <label for="item4">.xlsx</label>
+            </div>
+            <br>
+            <button type="submit">Start Embedding</button>
+        </form>
+    </frame>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
