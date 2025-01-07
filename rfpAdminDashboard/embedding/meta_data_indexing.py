@@ -33,7 +33,7 @@ llm = OpenAI(model="gpt-4o-mini")
 Settings.embed_model = embed_model
 Settings.llm = llm
 
-
+    
 class SectionOutput(BaseModel):
     """The metadata for a given section. Includes the section name, title, page that it starts on, and more."""
 
@@ -59,7 +59,6 @@ class SectionOutput(BaseModel):
         """Get section id."""
         return f"{self.section_name}: {self.section_title}"
 
-
 class SectionsOutput(BaseModel):
     """A list of all sections."""
 
@@ -72,6 +71,8 @@ class ValidSections(BaseModel):
     valid_indexes: List[int] = Field(
         "List of valid section indexes. Do NOT include sections to remove."
     )
+
+    
 
 async def aget_sections(
     doc_text: str, llm: Optional[LLM] = None
@@ -145,52 +146,18 @@ async def arefine_sections(
     new_sections = [s for idx, s in enumerate(sections) if idx in valid_indexes]
     return new_sections
 
-async def acreate_sections(text_nodes_dict):
-    sections_dict = {}
-    for paper_path, text_nodes in text_nodes_dict.items():
-        all_sections = []
-
-        tasks = [aget_sections(n.get_content(metadata_mode="all")) for n in text_nodes]
-
-        async_results = await run_jobs(tasks, workers=8, show_progress=True)
-        all_sections = [s for r in async_results for s in r]
-
-        all_sections = await arefine_sections(all_sections)
-        sections_dict[paper_path] = all_sections
-    return sections_dict
-
-def get_page_number(file_name):
-    match = re.search(r"-page-(\d+)\.jpg$", str(file_name))
-    if match:
-        return int(match.group(1))
-    else:
-        return
     
-def annotate_chunks_with_sections(chunks, sections):
-    main_sections = [s for s in sections if not s.is_subsection]
-    # subsections include the main sections too (some sections have no subsections etc.)
-    sub_sections = sections
-
-    main_section_idx, sub_section_idx = 0, 0
-    for idx, c in enumerate(chunks):
-        cur_page = c.metadata["page_num"]
-        while (
-            main_section_idx + 1 < len(main_sections)
-            and main_sections[main_section_idx + 1].start_page_number <= cur_page
-        ):
-            main_section_idx += 1
-        while (
-            sub_section_idx + 1 < len(sub_sections)
-            and sub_sections[sub_section_idx + 1].start_page_number <= cur_page
-        ):
-            sub_section_idx += 1
-
-        cur_main_section = main_sections[main_section_idx]
-        cur_sub_section = sub_sections[sub_section_idx]
-
-        c.metadata["section_id"] = cur_main_section.get_section_id()
-        c.metadata["sub_section_id"] = cur_sub_section.get_section_id()
-        
+def parseDocuments(papers):
+    paper_dicts = {}
+    for paper_path in papers:
+        full_paper_path = str(Path('data', 'RFP_samples') / paper_path)
+        md_json_objs = parser().get_json_result(full_paper_path)
+        json_dicts = md_json_objs[0]["pages"]
+        paper_dicts[paper_path] = {
+            "paper_path": full_paper_path,
+            "json_dicts": json_dicts,
+        }
+    return paper_dicts
 
 # attach image metadata to the text nodes
 def get_text_nodes(json_dicts, paper_path):
@@ -222,66 +189,47 @@ def parser():
         )
     return parser
 
-def parseDocuments(papers):
-    paper_dicts = {}
-    for paper_path in papers:
-        full_paper_path = str(Path('data', 'RFP_samples') / paper_path)
-        md_json_objs = parser().get_json_result(full_paper_path)
-        json_dicts = md_json_objs[0]["pages"]
-        paper_dicts[paper_path] = {
-            "paper_path": full_paper_path,
-            "json_dicts": json_dicts,
-        }
-    return paper_dicts
 
-def section_retrieve(query: str, chunk_retriever, index, verbose: bool = False) -> List[NodeWithScore]:
-    """Retrieve sections."""
-    if verbose:
-        print(f">> Identifying the right sections to retrieve")
-    chunk_nodes = chunk_retriever.retrieve(query)
+async def acreate_sections(text_nodes_dict):
+    sections_dict = {}
+    for paper_path, text_nodes in text_nodes_dict.items():
+        all_sections = []
 
-    all_section_nodes = {}
-    for node in chunk_nodes:
-        section_id = node.node.metadata["section_id"]
-        if verbose:
-            print(f">> Retrieving section: {section_id}")
-        filters = MetadataFilters.from_dicts(
-            [
-                {"key": "section_id", "value": section_id, "operator": "=="},
-                {
-                    "key": "paper_path",
-                    "value": node.node.metadata["paper_path"],
-                    "operator": "==",
-                },
-            ],
-            condition=FilterCondition.AND,
-        )
+        tasks = [aget_sections(n.get_content(metadata_mode="all")) for n in text_nodes]
 
-        # TODO: make node_ids not positional
-        section_nodes_raw = index.vector_store.get_nodes(node_ids=None, filters=filters)
-        section_nodes = [NodeWithScore(node=n) for n in section_nodes_raw]
-        # order and consolidate nodes
-        section_nodes_sorted = sorted(
-            section_nodes, key=lambda x: x.metadata["page_num"]
-        )
+        async_results = await run_jobs(tasks, workers=8, show_progress=True)
+        all_sections = [s for r in async_results for s in r]
 
-        all_section_nodes.update({n.id_: n for n in section_nodes_sorted})
-    return all_section_nodes.values()
-
-class SectionRetrieverRAGEngine(CustomQueryEngine):
-    """RAG Query Engine."""
-
-    synthesizer: BaseSynthesizer
-    verbose: bool = True
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(synthesizer=TreeSummarize(llm=llm))
-
-    def custom_query(self, query_str: str, chunk_retriever, index):
-        nodes = section_retrieve(query_str, chunk_retriever,index, verbose=self.verbose)
-        response_obj = self.synthesizer.synthesize(query_str, nodes)
-        return response_obj
+        all_sections = await arefine_sections(all_sections)
+        sections_dict[paper_path] = all_sections
+    return sections_dict
     
+
+def annotate_chunks_with_sections(chunks, sections):
+    main_sections = [s for s in sections if not s.is_subsection]
+    # subsections include the main sections too (some sections have no subsections etc.)
+    sub_sections = sections
+
+    main_section_idx, sub_section_idx = 0, 0
+    for idx, c in enumerate(chunks):
+        cur_page = c.metadata["page_num"]
+        while (
+            main_section_idx + 1 < len(main_sections)
+            and main_sections[main_section_idx + 1].start_page_number <= cur_page
+        ):
+            main_section_idx += 1
+        while (
+            sub_section_idx + 1 < len(sub_sections)
+            and sub_sections[sub_section_idx + 1].start_page_number <= cur_page
+        ):
+            sub_section_idx += 1
+
+        cur_main_section = main_sections[main_section_idx]
+        cur_sub_section = sub_sections[sub_section_idx]
+
+        c.metadata["section_id"] = cur_main_section.get_section_id()
+        c.metadata["sub_section_id"] = cur_sub_section.get_section_id()
+
 if __name__ == '__main__':
     papers = ['AUT101_Speeding up the ERS rental car replacement process with group messaging.pptx', 'cms.pdf']
     

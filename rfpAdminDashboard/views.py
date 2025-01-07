@@ -6,7 +6,7 @@ import pandas as pd
 import os
 from django.http import JsonResponse
 from django.contrib import messages
-from rfpAdminDashboard.embedding.embedding_engine import DocumentAnalysis
+from rfpAdminDashboard.embedding.flat_indexing import DocumentAnalysis
 
 def dashboard(request, *args, **kwargs):
     if request.method == "POST":
