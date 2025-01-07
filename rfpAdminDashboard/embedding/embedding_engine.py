@@ -12,12 +12,14 @@ from llama_index.core import SimpleDirectoryReader
 from llama_index.core.schema import TextNode
 from llama_index.core import VectorStoreIndex
 from llama_index.core.node_parser import MarkdownElementNodeParser
+from dotenv import load_dotenv
+load_dotenv()
 # node_parser = MarkdownElementNodeParser(num_workers=8)
 
 # reranker = SentenceTransformerRerank(model="cross-encoder/ms-marco-MiniLM-L-2-v2", top_n=3)
 # embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
 
-os.environ["OPENAI_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
 
 #db = chromadb.PersistentClient(path=f"{os.path.join('rfpApp','vector_database')}")
 
@@ -28,7 +30,7 @@ class DocumentAnalysis:
 
     def setupParser(self):
         parser = LlamaParse(
-            api_key= "",  
+            api_key= os.getenv('LLAMA_CLOUD_KEY'),  
             result_type="markdown",  
             num_workers=8,   
             verbose=True,

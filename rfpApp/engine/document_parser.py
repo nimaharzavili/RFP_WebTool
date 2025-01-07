@@ -11,9 +11,11 @@ from llama_index.core.node_parser import MarkdownElementNodeParser
 import os, time
 from llama_index.core.postprocessor import SentenceTransformerRerank
 node_parser = MarkdownElementNodeParser(num_workers=8)
+from dotenv import load_dotenv
+load_dotenv()
 
 reranker = SentenceTransformerRerank( model="cross-encoder/ms-marco-MiniLM-L-2-v2", top_n=3)
-os.environ["OPENAI_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
 
 class DocumentParser:
     def __init__(self, document_type='pdf'):
@@ -21,7 +23,7 @@ class DocumentParser:
 
     def setupParser(self):
         parser = LlamaParse(
-            api_key= "",  
+            api_key= os.getenv('LLAMA_CLOUD_KEY'),  
             result_type="markdown",  
             num_workers=4,   
             verbose=True,

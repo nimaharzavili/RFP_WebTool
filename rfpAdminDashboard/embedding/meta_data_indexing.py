@@ -23,8 +23,10 @@ from llama_index.core.vector_stores.types import (
 )
 from llama_index.core.schema import NodeWithScore
 from llama_index.core import VectorStoreIndex
+from dotenv import load_dotenv
+load_dotenv()
 
-os.environ["OPENAI_API_KEY"] = ""
+os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
 embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 llm = OpenAI(model="gpt-4o-mini")
 
@@ -212,7 +214,7 @@ def get_text_nodes(json_dicts, paper_path):
 
 def parser():
     parser = LlamaParse(
-            api_key="llx-DME7JWfhFodj3Khf1B8IvFW0zzN6kr7FZc4uBZSU9ieIFtQK",  
+            api_key=os.getenv('LLAMA_CLOUD_KEY'),  
             result_type="markdown",  
             num_workers=4,   
             verbose=True,
