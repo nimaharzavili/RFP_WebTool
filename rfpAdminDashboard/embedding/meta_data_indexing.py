@@ -236,6 +236,7 @@ async def meta_indexing():
 
         for paper_path, paper_dict in paper_dicts.items():
             json_dicts = paper_dict["json_dicts"]
+            # Nodes represent "chunks" of source Documents, whether that is a text chunk, an image, or more. They also contain metadata and relationship information with other nodes and index structures.
             text_nodes = get_text_nodes(json_dicts, paper_dict["paper_path"])
             # all_text_nodes.extend(text_nodes)
             text_nodes_dict[paper_path] = text_nodes
@@ -248,6 +249,7 @@ async def meta_indexing():
         
         for paper_path, text_nodes in text_nodes_dict.items():
             sections = sections_dict[paper_path]
+            # Annotate each chunk with the section metadata
             annotate_chunks_with_sections(text_nodes, sections)
 
         if not os.path.exists('text_nodes.pkl'):     

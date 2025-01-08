@@ -6,7 +6,6 @@ import pandas as pd
 import os
 from django.http import JsonResponse
 from django.contrib import messages
-from rfpAdminDashboard.embedding.flat_indexing import DocumentAnalysis
 from rfpAdminDashboard.embedding.meta_data_indexing import meta_indexing
 
 def dashboard(request, *args, **kwargs):
@@ -30,11 +29,11 @@ def dashboard(request, *args, **kwargs):
 def fileManager(request, *args, **kwargs):
     if request.method == 'POST':
         uploaded_files = request.FILES.getlist('files')
-
+        dest_storage = request.POST.get('option')
         if uploaded_files:
             try:
                 for file in uploaded_files:
-                    file_path = os.path.join('rfpAdminDashboard', 'data', 'RFP_files', file.name)
+                    file_path = os.path.join('rfpAdminDashboard', 'data', dest_storage, file.name)
                     with open(file_path, 'wb') as f:
                         for chunk in file.chunks():
                             f.write(chunk)
@@ -50,7 +49,7 @@ def fileManager(request, *args, **kwargs):
 def embedding(request, *args, **kwargs):
     if request.method == "POST":
         indexing_granularity = request.POST.get('bool_value', None)
-        docTypesList = request.POST.getlist('items')
+        
         index_flag = meta_indexing()
         if index_flag:
             return HttpResponse("Indexing is finished.")

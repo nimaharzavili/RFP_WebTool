@@ -347,8 +347,20 @@
 
         <form method="POST" action="{% url 'rfpAdminDashboard:fileManager' %}" enctype="multipart/form-data">
             {% csrf_token %}
-            <label for="files">Choose files:</label>
+            <label for="files">Choose files for building RAG:</label>
             <input type="file" name="files" multiple>
+            <div>
+                <input type="radio" name="option" value="GGP" id="item1">
+                <label for="item1">GGP files</label>
+            </div>
+            <div>
+                <input type="radio" name="option" value="RFP" id="item2">
+                <label for="item2">RFP files</label>
+            </div>
+            <div>
+                <input type="radio" name="option" value="Web" id="item3">
+                <label for="item3">HGS Website</label>
+            </div>
             <button type="submit">Upload</button>
         </form>
 
