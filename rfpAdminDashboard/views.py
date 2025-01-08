@@ -48,9 +48,9 @@ def fileManager(request, *args, **kwargs):
 
 def embedding(request, *args, **kwargs):
     if request.method == "POST":
-        indexing_granularity = request.POST.get('bool_value', None)
+        target_indexing = request.POST.get('option')
         
-        index_flag = meta_indexing()
+        index_flag = meta_indexing(target_indexing)
         if index_flag:
             return HttpResponse("Indexing is finished.")
         else:

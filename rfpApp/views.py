@@ -9,8 +9,10 @@ from llama_index.core.postprocessor import SentenceTransformerRerank
 node_parser = MarkdownElementNodeParser(num_workers=8)
 from rfpApp.engine.query_summarizer import paraphraseQuery
 import asyncio
-reranker = SentenceTransformerRerank( model="cross-encoder/ms-marco-MiniLM-L-2-v2", top_n=3)
+# from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
 
+reranker = SentenceTransformerRerank( model="cross-encoder/ms-marco-MiniLM-L-2-v2", top_n=5)
+# reranker = FlagEmbeddingReranker(top_n=5,model="BAAI/bge-reranker-large",)
 async def home(request, *args, **kwargs):
     if request.method == "POST":
         query_text = request.POST["textbox"]
@@ -35,22 +37,42 @@ async def home(request, *args, **kwargs):
     
 def cor1(raw_index, query_text):
     recursive_query_engine = raw_index.as_query_engine(
-                similarity_top_k=2, node_postprocessors=[reranker], verbose=True, temperature=0.7
+                similarity_top_k=5, node_postprocessors=[reranker], verbose=True, temperature=0.7
             )
     return recursive_query_engine.aquery(query_text)
     
 def cor2(raw_index, query_text):
     recursive_query_engine = raw_index.as_query_engine(
-                similarity_top_k=2, node_postprocessors=[reranker], verbose=True, temperature=0.8
+                similarity_top_k=5, node_postprocessors=[reranker], verbose=True, temperature=0.8
             )
     return recursive_query_engine.aquery(query_text)
-    
+
+def download(request, *args, **kwargs):
+    record_id_str = kwargs.get("id", None)
+    if not record_id_str:
+        return HttpResponse("No ID Provided.", status=400)
+    else:
+        record_id = int(record_id_str)        
+        if os.path.exists(f"seoanalysisapp/static/ranked_data_{record_id}.csv"):
+            with open(f"seoanalysisapp/static/ranked_data_{record_id}.csv", "rb") as f:
+                response = HttpResponse(f.read(), content_type="text/csv")
+                response["Content-Disposition"] = f'attachment; filename="ranked_data_{record_id}.csv"'
+                os.remove(f"seoanalysisapp/static/ranked_data_{record_id}.csv")
+            return response
+            
+        else:
+            return HttpResponse("File not found.", status=404)
+        
 async def directSearch(request):
     response_text1 = ""
     response_text2 = ""
+    meta1 = []
+    meta2 = []
     if request.method == 'POST':
         query_text = request.POST["textbox"]
-        index_file_path = os.path.join('static', 'index.pkl')
+        target_indexing = request.POST.get('option')
+
+        index_file_path = os.path.join("static",target_indexing, f"{target_indexing}_index.pkl")
         
         if not os.path.exists(index_file_path):
             return HttpResponse('Index file not found. Please first do the indexing, then you can start searching HGS products and services.')
@@ -63,9 +85,13 @@ async def directSearch(request):
             #             similarity_top_k=5, node_postprocessors=[reranker], verbose=True, temperature=0.9
             #         )
             
-            response_1, response_2 = await asyncio.gather(*[cor1(raw_index, query_text),cor2(raw_index, query_text)])
+            response_1, response_2 = await asyncio.gather(*[cor1(raw_index, query_text), cor2(raw_index, query_text)])
 
-            print("I passed")
+            desired_keys = ['page_num', 'paper_path', 'section_id', 'sub_section_id']
+            items = [v for k, v in response_1.metadata.items()]
+            meta1 = [items[0][key] for key in desired_keys if key in items[0]]
+            meta2 = [items[1][key] for key in desired_keys if key in items[1]]
+
             if hasattr(response_1, 'text') or hasattr(response_2, 'text'): 
                 response_text1 = response_1.text
                 response_text2 = response_2.text
@@ -73,41 +99,12 @@ async def directSearch(request):
                 response_text1 = str(response_1)
                 response_text2 = str(response_2)
             
-            # print(f"modified resp:{response_text2}")
         except Exception as e:
             return HttpResponse(str(e))
         
-    return render(request, "directSearch.html", {'response_text1': response_text1, 'response_text2': response_text2})
+    return render(request, "directSearch.html", {'response_text1': response_text1, 'response_text2': response_text2, 'meta1':meta1, 'meta2':meta2})
 
 async def customSearch(request):
     return render(request, "customSearch.html")
 
-# async def directSearch(request):
-#     response_text = ""
-#     if request.method == 'POST':
-#         query_text = request.POST["textbox"]
-#         index_file_path = os.path.join('static', 'index.pkl')
-        
-#         if not os.path.exists(index_file_path):
-#             return HttpResponse('Index file not found. Please first do the indexing, then you can start searching HGS products and services.')
-        
-#         try:
-#             with open(index_file_path, 'rb') as index_file:
-#                 raw_index = pickle.load(index_file)
 
-
-#             recursive_query_engine = raw_index.as_query_engine(
-#                 similarity_top_k=5, node_postprocessors=[reranker], verbose=True
-#             )
-
-#             response = recursive_query_engine.query(query_text)
-
-#             if hasattr(response, 'text'): 
-#                 response_text = response.text
-#             else:
-#                 response_text = str(response)
-
-#         except Exception as e:
-#             return HttpResponse(str(e))
-        
-#     return render(request, "search.html", {'response_text': response_text})

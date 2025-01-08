@@ -352,6 +352,19 @@
         <form id="upload-form" action="{% url 'rfpApp:directSearch' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="text" id="textbox" name="textbox" placeholder="Type your query here...">
+            <label for="files">Filter search based on HGS domains:</label>
+            <div>
+                <input type="radio" name="option" value="GGP" id="item1">
+                <label for="item1">GGP</label>
+            </div>
+            <div>
+                <input type="radio" name="option" value="RFP" id="item2">
+                <label for="item2">RFP</label>
+            </div>
+            <div>
+                <input type="radio" name="option" value="Web" id="item3">
+                <label for="item3">HGS Website</label>
+            </div>
             <input type="submit" id="submit-btn" value="Search" onclick="performSearch()">
         </form>
     </div>  
@@ -360,7 +373,17 @@
         <h2>Results:</h2>  
         <div id="results">
             <p id="resultsFrame">{{response_text1}}</p>
+            <p id="resultsFrame">
+                {% for item in meta1 %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </p>
             <p id="resultsFrame">{{response_text2}}</p>
+            <p id="resultsFrame">
+                {% for item in meta2 %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </p>
         </div>  
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

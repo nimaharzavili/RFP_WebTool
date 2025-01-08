@@ -109,33 +109,20 @@
     <frame>
         <form method="POST" action="{% url 'rfpAdminDashboard:embedding' %}">
             {% csrf_token %}
-    
-            <h4>Choose input mode for document embedding:</h4>
-            <select name="bool_value" id="bool_value">
-                <option value="True">Use Page Node</option>
-                <option value="False">Use Documents Directly</option>
-            </select>
-            <br>
-            <h4>Select document types for embedding:</h4>
-            <h6>If you do not select any document type, the embedding will be done on all documents types.</h6>
+            <label for="files">Select a target for RAG construction:</label>
             <div>
-                <input type="checkbox" name="items" value=".pdf" id="item1">
-                <label for="item1">.pdf</label>
+                <input type="radio" name="option" value="GGP" id="item1">
+                <label for="item1">GGP</label>
             </div>
             <div>
-                <input type="checkbox" name="items" value=".docx" id="item2">
-                <label for="item2">.docx</label>
+                <input type="radio" name="option" value="RFP" id="item2">
+                <label for="item2">RFP</label>
             </div>
             <div>
-                <input type="checkbox" name="items" value=".pptx" id="item3">
-                <label for="item3">.pptx</label>
+                <input type="radio" name="option" value="Web" id="item3">
+                <label for="item3">HGS Website</label>
             </div>
-            <div>
-                <input type="checkbox" name="items" value=".xlsx" id="item4">
-                <label for="item4">.xlsx</label>
-            </div>
-            <br>
-            <button type="submit">Start Embedding</button>
+            <button type="submit">Start Indexing</button>
         </form>
     </frame>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

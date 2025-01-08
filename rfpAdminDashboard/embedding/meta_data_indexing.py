@@ -143,10 +143,11 @@ async def arefine_sections(
     return new_sections
 
     
-def parseDocuments(papers):
+def parseDocuments(papers, target_indexing):
     paper_dicts = {}
     for paper_path in papers:
-        full_paper_path = str(Path('data', 'RFP_samples') / paper_path)
+        full_paper_path = os.path.join('rfpAdminDashboard','data', target_indexing , paper_path)
+        print(f"This is file path:{full_paper_path}")
         md_json_objs = parser().get_json_result(full_paper_path)
         json_dicts = md_json_objs[0]["pages"]
         paper_dicts[paper_path] = {
@@ -226,42 +227,50 @@ def annotate_chunks_with_sections(chunks, sections):
         c.metadata["section_id"] = cur_main_section.get_section_id()
         c.metadata["sub_section_id"] = cur_sub_section.get_section_id()
 
-async def meta_indexing():
-    papers = ['AUT101_Speeding up the ERS rental car replacement process with group messaging.pptx', 'cms.pdf']
-    
-    if not os.path.exists('index.pkl'):  
-        paper_dicts = parseDocuments(papers)
+def meta_indexing(target_indexing):
+    _path = os.path.join("rfpAdminDashboard", "data", target_indexing)
+
+    files = os.listdir(_path)
+    if not os.path.isfile(os.path.join("static", target_indexing, f"{target_indexing}_index.pkl")):
+
+        print("Document parsing started...")  
+        paper_dicts = parseDocuments(files, target_indexing)
+
         all_text_nodes = []
         text_nodes_dict = {}
 
-        for paper_path, paper_dict in paper_dicts.items():
-            json_dicts = paper_dict["json_dicts"]
+        for file_path, file_dict in paper_dicts.items():
+            json_dicts = file_dict["json_dicts"]
             # Nodes represent "chunks" of source Documents, whether that is a text chunk, an image, or more. They also contain metadata and relationship information with other nodes and index structures.
-            text_nodes = get_text_nodes(json_dicts, paper_dict["paper_path"])
+            print("Extracting text nodes from documents...")
+            text_nodes = get_text_nodes(json_dicts, file_dict["paper_path"])
             # all_text_nodes.extend(text_nodes)
-            text_nodes_dict[paper_path] = text_nodes
+            text_nodes_dict[file_path] = text_nodes
 
-        if not os.path.exists('sections_dict.pkl'):
+        if not os.path.isfile(os.path.join("static", target_indexing,f"{target_indexing}_sections_dict.pkl")):
+            print("Creating sections based on extracted text nodes...")
             sections_dict = asyncio_run(acreate_sections(text_nodes_dict))
-            pickle.dump(sections_dict, open("sections_dict.pkl", "wb"))
+            pickle.dump(sections_dict, open(os.path.join("static", target_indexing, f"{target_indexing}_sections_dict.pkl"), "wb"))
         else:
-            sections_dict = pickle.load(open("sections_dict.pkl", "rb"))
+            sections_dict = pickle.load(open(os.path.join("static",target_indexing, f"{target_indexing}_sections_dict.pkl"), "rb"))
         
-        for paper_path, text_nodes in text_nodes_dict.items():
-            sections = sections_dict[paper_path]
+        for file_path, text_nodes in text_nodes_dict.items():
+            sections = sections_dict[file_path]
             # Annotate each chunk with the section metadata
+            print("Conducting annotation...")
             annotate_chunks_with_sections(text_nodes, sections)
 
-        if not os.path.exists('text_nodes.pkl'):     
-            pickle.dump(text_nodes_dict, open("text_nodes.pkl", "wb"))
+        if not os.path.isfile(os.path.join("static", target_indexing, f"{target_indexing}_text_nodes.pkl")):     
+            pickle.dump(text_nodes_dict, open(os.path.join("static", target_indexing, f"{target_indexing}_text_nodes.pkl"), "wb"))
         else:
-            text_nodes_dict = pickle.load(open("text_nodes.pkl", "rb"))
+            text_nodes_dict = pickle.load(open(os.path.join("static", target_indexing, f"{target_indexing}_text_nodes.pkl"), "rb"))
 
-        for paper_path, text_nodes in text_nodes_dict.items():
+        for file_path, text_nodes in text_nodes_dict.items():
             all_text_nodes.extend(text_nodes)
 
+        print("Indexing operation started...")
         index = VectorStoreIndex(all_text_nodes)
-        pickle.dump(index, open(os.path.join(), "wb"))
+        pickle.dump(index, open(os.path.join("static", target_indexing, f"{target_indexing}_index.pkl"), "wb"))
     return True
 
 if __name__ == '__main__':
